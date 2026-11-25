@@ -1,14 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod audio;
+pub mod model;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+// Export both managers to the compiled wasm-pack build output
+pub use audio::BrowserAudioProcessor;
+pub use model::ExtensionModelManager;
