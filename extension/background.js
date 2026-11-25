@@ -73,6 +73,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  if (message.action === "get_capture_status") {
+    chrome.offscreen.hasDocument()
+      .then((active) => sendResponse({ ok: true, active }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+
+  if (message.action === "stop_youtube_capture") {
+    (async () => {
+      try {
+        if (captureStartInProgress) {
+          throw new Error("Capture is still starting. Try again in a moment.");
+        }
+        if (await chrome.offscreen.hasDocument()) {
+          const result = await chrome.runtime.sendMessage({ action: "stop_capture" });
+          if (result?.ok === false) {
+            throw new Error(result.error || "Could not stop audio capture.");
+          }
+          await chrome.offscreen.closeDocument();
+        }
+        sendResponse({ ok: true, active: false });
+      } catch (error) {
+        sendResponse({ ok: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
   if (message.action === "forward_to_tab") {
     if (sender.url !== chrome.runtime.getURL("offscreen.html")) {
       sendResponse({ ok: false, error: "Unauthorized message sender." });
@@ -130,8 +158,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         streamId,
         tabId: tab.id,
       });
-      sendResponse({ ok: true });
+      sendResponse({ ok: true, active: true });
     } catch (error) {
+      if (await chrome.offscreen.hasDocument().catch(() => false)) {
+        await chrome.offscreen.closeDocument().catch(() => {});
+      }
       console.error("Failed to start YouTube capture:", error);
       sendResponse({ ok: false, error: error.message });
     } finally {
