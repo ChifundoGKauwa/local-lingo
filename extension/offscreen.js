@@ -172,7 +172,10 @@ async function processNextAudioWindow() {
     const overlapWords = transcript.split(/\s+/).filter(Boolean).length -
       freshTranscript.split(/\s+/).filter(Boolean).length;
     previousWindowTranscript = transcript;
-    if (!freshTranscript) return;
+    if (!freshTranscript) {
+      console.debug("Whisper returned no new text for the current audio window.");
+      return;
+    }
 
     const chunks = Array.isArray(result?.chunks) && result.chunks.length
       ? result.chunks
@@ -218,7 +221,12 @@ async function processNextAudioWindow() {
     }
     if (!cues.length) return;
 
-    await chrome.runtime.sendMessage({
+    console.info("Translation ready to render", {
+      characters: freshTranscript.length,
+      timedChunks: cues.length,
+      windowBecameStale,
+    });
+    const delivery = await chrome.runtime.sendMessage({
       action: "forward_to_tab",
       tabId: sessionTabId,
       payload: {
@@ -228,6 +236,9 @@ async function processNextAudioWindow() {
         text: cues.map((cue) => cue.text).join(" "),
       },
     });
+    if (!delivery?.ok) {
+      console.error("Subtitle delivery to the YouTube tab failed:", delivery?.error);
+    }
   } catch (error) {
     console.error("Whisper inference failed:", error);
     await notifyStatus(
