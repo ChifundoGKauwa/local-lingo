@@ -2,12 +2,10 @@ let captureStartInProgress = false;
 
 async function hasOffscreenDocument() {
   try {
-    const contexts = await chrome.runtime.getContexts({
-      contextTypes: ["OFFSCREEN_DOCUMENT"],
-    });
-    return contexts.length > 0;
+    const response = await chrome.runtime.sendMessage({ action: "offscreen_ping" });
+    return response?.ok === true;
   } catch (error) {
-    return await chrome.offscreen.hasDocument();
+    return false;
   }
 }
 
@@ -87,7 +85,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "get_capture_status") {
     hasOffscreenDocument()
       .then((active) => sendResponse({ ok: true, active }))
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+      .catch((error) => {
+        console.error("Failed to read offscreen capture status:", error);
+        sendResponse({ ok: false, error: error.message });
+      });
     return true;
   }
 
