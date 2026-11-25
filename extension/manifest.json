@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Local Lingo Subtitles",
+  "version": "1.0",
+  "permissions": ["tabCapture", "activeTab", "offscreen", "scripting"],
+  "host_permissions": [
+    "https://*.youtube.com/*",
+    "http://*.youtube.com/*",
+    "https://huggingface.co/*",
+    "https://*.huggingface.co/*",
+    "https://*.hf.space/*",
+    "https://*.githubusercontent.com/*",
+    "https://cdn-lfs.huggingface.co/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.youtube.com/*", "http://*.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
