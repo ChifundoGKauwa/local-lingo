@@ -89,22 +89,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const video = getYouTubeVideo();
       const now = video?.currentTime;
       const newestCue = cues.at(-1);
-      const cueTimesAlreadyPassed = Number.isFinite(now) && newestCue &&
-        (!Number.isFinite(newestCue.endTime) || newestCue.endTime < now - 0.35);
+      const firstCue = cues[0];
+      const cueTimesOutOfRange = Number.isFinite(now) && newestCue && (
+        !Number.isFinite(newestCue.endTime) ||
+        newestCue.endTime < now - 0.35 ||
+        (Number.isFinite(firstCue?.startTime) && firstCue.startTime > now + 0.75)
+      );
+      const rebaseToNow = newestCue && (message.windowBecameStale || cueTimesOutOfRange);
 
-      if (cueTimesAlreadyPassed) {
+      if (rebaseToNow) {
         const originalDuration = Number.isFinite(newestCue.startTime) &&
           Number.isFinite(newestCue.endTime)
           ? newestCue.endTime - newestCue.startTime
           : 2;
         timedCues.push({
           text: newestCue.text,
-          startTime: now,
-          endTime: now + Math.min(3, Math.max(1.2, originalDuration)),
+          startTime: Number.isFinite(now) ? now : 0,
+          endTime: (Number.isFinite(now) ? now : 0) + Math.min(4, Math.max(2, originalDuration)),
         });
       } else {
         timedCues.push(...cues);
       }
+      console.info("Subtitle cues received", {
+        count: cues.length,
+        rebased: Boolean(rebaseToNow),
+        videoTime: now,
+      });
       timedCues.sort((left, right) => (left.startTime ?? 0) - (right.startTime ?? 0));
       overlay.textContent = "";
       lastRenderedCue = "";
