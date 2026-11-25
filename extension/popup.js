@@ -27,12 +27,16 @@ async function loadState() {
     if (!response?.ok) throw new Error(response?.error || "Status unavailable");
     renderState(Boolean(response.active));
   } catch (error) {
-    statusText.textContent = "Could not read capture status";
+    isEnabled = false;
+    toggle.setAttribute("aria-checked", "false");
+    stateLabel.textContent = "OFF";
+    stateLabel.dataset.state = "off";
+    controlDescription.textContent = "Select to start or retry capture";
+    statusText.textContent = "Status unavailable · you can still try the switch";
     statusIndicator.dataset.state = "error";
-    toggle.disabled = true;
     console.error("Failed to read Local Lingo status:", error);
   } finally {
-    if (statusIndicator.dataset.state !== "error") toggle.disabled = false;
+    toggle.disabled = false;
   }
 }
 
