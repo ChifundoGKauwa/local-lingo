@@ -20,8 +20,14 @@ let audioWasDropped = false;
 let latestVideoClock = null;
 let overlapTailTime = null;
 
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const sourceTabId = message.tabId ?? sender.tab?.id;
+  if (message.action === "stop_capture") {
+    stopCapture()
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
   if (message.action === "video_clock" && sourceTabId === sessionTabId) {
     latestVideoClock = {
       currentTime: message.currentTime,
@@ -353,5 +359,37 @@ export async function startCapture(message) {
       await notifyStatus(message.tabId, "Audio capture failed to start.");
     }
     throw error;
+  }
+}
+
+async function stopCapture() {
+  const capture = activeCapture;
+  const tabId = sessionTabId;
+  activeCapture = null;
+  sessionTabId = null;
+  sessionModelManager = null;
+  audioChunks = [];
+  queuedSamples = 0;
+  overlapTail = new Float32Array(0);
+  overlapTailTime = null;
+  audioWasDropped = false;
+  previousWindowTranscript = "";
+
+  if (capture) {
+    capture.captureNode.port.onmessage = null;
+    capture.captureNode.disconnect();
+    capture.source.disconnect();
+    capture.mediaStream.getTracks().forEach((track) => track.stop());
+    if (capture.audioCtx.state !== "closed") {
+      await capture.audioCtx.close().catch(() => {});
+    }
+  }
+
+  if (tabId) {
+    await chrome.runtime.sendMessage({
+      action: "forward_to_tab",
+      tabId,
+      payload: { action: "clear_subtitles" },
+    }).catch(() => {});
   }
 }
