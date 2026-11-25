@@ -3,4 +3,15 @@ name = "local-lingo"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
+hound = "3.5.1"
+ringbuf = "0.6.0"
+wasm-bindgen = "0.2.130"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Native-only: `whisper-rs` builds C++ bindings and requires libclang, which is
+# not available for browser/WebAssembly builds.
+whisper-rs = "0.16.0"
