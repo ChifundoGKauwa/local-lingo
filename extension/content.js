@@ -127,6 +127,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === "clear_subtitles") {
+    timedCues = [];
+    lastRenderedCue = "";
+    if (window.subtitleTimeout) clearTimeout(window.subtitleTimeout);
+    const overlay = document.getElementById("local-lingo-subtitles");
+    if (overlay) overlay.textContent = "";
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (message.action === "init_stream") {
     sendResponse({ ok: true });
     return true;
