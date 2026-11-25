@@ -1,5 +1,16 @@
 let captureStartInProgress = false;
 
+async function hasOffscreenDocument() {
+  try {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+    });
+    return contexts.length > 0;
+  } catch (error) {
+    return await chrome.offscreen.hasDocument();
+  }
+}
+
 async function ensureContentScript(tabId) {
   try {
     await chrome.tabs.sendMessage(tabId, { action: "ping" });
@@ -74,7 +85,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === "get_capture_status") {
-    chrome.offscreen.hasDocument()
+    hasOffscreenDocument()
       .then((active) => sendResponse({ ok: true, active }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
@@ -86,7 +97,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (captureStartInProgress) {
           throw new Error("Capture is still starting. Try again in a moment.");
         }
-        if (await chrome.offscreen.hasDocument()) {
+        if (await hasOffscreenDocument()) {
           const result = await chrome.runtime.sendMessage({ action: "stop_capture" });
           if (result?.ok === false) {
             throw new Error(result.error || "Could not stop audio capture.");
@@ -135,7 +146,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         throw new Error("No active tab available for capture.");
       }
 
-      const existing = await chrome.offscreen.hasDocument();
+      const existing = await hasOffscreenDocument();
       if (existing) {
         await chrome.offscreen.closeDocument();
       }
@@ -160,7 +171,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       sendResponse({ ok: true, active: true });
     } catch (error) {
-      if (await chrome.offscreen.hasDocument().catch(() => false)) {
+      if (await hasOffscreenDocument().catch(() => false)) {
         await chrome.offscreen.closeDocument().catch(() => {});
       }
       console.error("Failed to start YouTube capture:", error);
