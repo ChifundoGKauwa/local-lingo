@@ -161,10 +161,10 @@ async function processNextAudioWindow() {
       return_timestamps: true,
     });
 
-    if (audioWasDropped) {
+    const windowBecameStale = audioWasDropped;
+    if (windowBecameStale) {
       previousWindowTranscript = "";
       audioWasDropped = false;
-      return;
     }
 
     const transcript = result?.text?.trim() ?? "";
@@ -206,6 +206,16 @@ async function processNextAudioWindow() {
           : audioWindow.startTime + (end ?? audioWindow.samples.length / SAMPLE_RATE) * videoSecondsPerAudioSecond,
       });
     }
+    if (!cues.length) {
+      const fallbackText = sessionModelManager.process_transcript_chunk(freshTranscript);
+      if (fallbackText.trim()) {
+        cues.push({
+          text: fallbackText.trim(),
+          startTime: audioWindow.startTime,
+          endTime: audioWindow.endTime,
+        });
+      }
+    }
     if (!cues.length) return;
 
     await chrome.runtime.sendMessage({
@@ -214,6 +224,7 @@ async function processNextAudioWindow() {
       payload: {
         action: "render_subtitle",
         cues,
+        windowBecameStale,
         text: cues.map((cue) => cue.text).join(" "),
       },
     });
