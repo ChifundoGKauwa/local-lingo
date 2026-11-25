@@ -85,7 +85,26 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (Array.isArray(message.cues)) {
       const overlay = createSubtitleOverlay();
       if (window.subtitleTimeout) clearTimeout(window.subtitleTimeout);
-      timedCues.push(...message.cues);
+      const cues = message.cues.filter((cue) => cue.text);
+      const video = getYouTubeVideo();
+      const now = video?.currentTime;
+      const newestCue = cues.at(-1);
+      const cueTimesAlreadyPassed = Number.isFinite(now) && newestCue &&
+        (!Number.isFinite(newestCue.endTime) || newestCue.endTime < now - 0.35);
+
+      if (cueTimesAlreadyPassed) {
+        const originalDuration = Number.isFinite(newestCue.startTime) &&
+          Number.isFinite(newestCue.endTime)
+          ? newestCue.endTime - newestCue.startTime
+          : 2;
+        timedCues.push({
+          text: newestCue.text,
+          startTime: now,
+          endTime: now + Math.min(3, Math.max(1.2, originalDuration)),
+        });
+      } else {
+        timedCues.push(...cues);
+      }
       timedCues.sort((left, right) => (left.startTime ?? 0) - (right.startTime ?? 0));
       overlay.textContent = "";
       lastRenderedCue = "";
