@@ -1,11 +1,50 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Local Lingo</title>
+    <link rel="stylesheet" href="popup.css" />
   </head>
-  <body style="width: 200px; padding: 10px">
-    <h3>Local Lingo</h3>
-    <button id="startBtn">Capture YouTube Audio</button>
+  <body>
+    <main class="popup" aria-labelledby="app-title">
+      <header class="header">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 10v4m4-8v12m4-9v6m4-11v16m4-10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <h1 id="app-title">Local Lingo</h1>
+          <p class="subtitle">Live translated subtitles</p>
+        </div>
+      </header>
+
+      <section class="control" aria-label="Translation control">
+        <div class="control-copy">
+          <span class="control-title">YouTube translation</span>
+          <span class="control-description" id="control-description">Turn on for the current video</span>
+        </div>
+        <button
+          id="toggle"
+          class="switch"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label="YouTube translation"
+          aria-describedby="control-description"
+          disabled
+        >
+          <span class="switch-thumb"></span>
+        </button>
+      </section>
+
+      <footer class="footer" aria-live="polite">
+        <span id="status-indicator" class="status-indicator" aria-hidden="true"></span>
+        <span id="status-text">Checking status…</span>
+        <span id="state-label" class="state-label">OFF</span>
+      </footer>
+    </main>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
